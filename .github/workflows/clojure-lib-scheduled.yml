@@ -54,6 +54,17 @@ jobs:
           key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
           restore-keys: clojure-${{ runner.os }}-
 
+      # Maven Central rate-limits shared runner addresses now and then, so a
+      # download that fails is retried before the job does.
+      - name: Resolve the dependencies
+        run: |
+          for attempt in 1 2 3; do
+            make deps && exit 0
+            echo "dependency resolution failed (attempt ${attempt}); retrying"
+            sleep $((attempt * 15))
+          done
+          exit 1
+
       # One open issue lists what is outdated and is closed when nothing is.
       - name: Report outdated dependencies in an issue
         run: |
@@ -110,6 +121,17 @@ jobs:
             ~/.gitlibs
           key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
           restore-keys: clojure-${{ runner.os }}-
+
+      # Maven Central rate-limits shared runner addresses now and then, so a
+      # download that fails is retried before the job does.
+      - name: Resolve the dependencies
+        run: |
+          for attempt in 1 2 3; do
+            make deps && exit 0
+            echo "dependency resolution failed (attempt ${attempt}); retrying"
+            sleep $((attempt * 15))
+          done
+          exit 1
 
       - name: Scan the resolved dependencies for known vulnerabilities
         run: make audit
