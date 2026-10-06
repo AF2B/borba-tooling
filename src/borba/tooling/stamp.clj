@@ -57,11 +57,31 @@
   []
   (str/trim (:out (process/shell {:out :string} "git" "rev-parse" "HEAD"))))
 
+(defn- service-names
+  "Returns the names of the services as keywords. From the command line they
+   are a string, such as \"[postgres redis]\" or \"postgres,redis\", because
+   `bb -x` does not read a vector; from a program they are a collection.
+   - services: a string, or a collection of strings, symbols or keywords"
+  [services]
+  (if (string? services)
+    (map keyword (remove str/blank? (str/split services #"[\s,\[\]]+")))
+    (map keyword services)))
+
 (defn- service-flags
   "Returns, for each service the pipelines can start, whether a project uses it.
+   Fails naming a service that the pipelines cannot start, so that a typo is not
+   a pipeline that quietly leaves its integration tests out.
    - services: the services the project's integration tests need"
   [services]
-  (let [needed (set (map keyword services))]
+  (let [needed  (set (service-names services))
+        unknown (sort (remove (set known-services) needed))]
+    (when (seq unknown)
+      (throw (ex-info (str "unknown services: "
+                           (str/join ", " (map name unknown))
+                           "; the pipelines can start "
+                           (str/join ", " (map name known-services)))
+                      {:unknown (vec unknown)
+                       :known   known-services})))
     (into {} (map (fn [service] [service (contains? needed service)]))
           known-services)))
 
