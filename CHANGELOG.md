@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-06
+
 ### Fixed
 
 - The release adopts the release that already exists for the tag, draft or not, uploads the assets over it and publishes it, and
@@ -47,7 +49,8 @@ First release.
   pull request templates, editor, formatter and lint configuration, `Makefile`, `build.clj` and the caller workflows.
 - The standard and the decisions behind it.
 
-[Unreleased]: https://github.com/AF2B/borba-tooling/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/AF2B/borba-tooling/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/AF2B/borba-tooling/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/AF2B/borba-tooling/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/AF2B/borba-tooling/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AF2B/borba-tooling/releases/tag/v0.1.0
