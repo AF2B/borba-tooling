@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-06
+
+### Fixed
+
+- Every job resolves the dependencies in a step of its own, retried three times with a growing pause: Maven Central rate-limits
+  shared runner addresses now and then, and the first release of a library failed on an HTTP 403 that a re-run did not repeat.
+- `make deps` warms every alias on its own and the Babashka classpath; a single combined classpath did not.
+- The release notes print the coordinate in the shape the README uses, ready to paste into `deps.edn`.
+
 ## [0.1.1] - 2026-10-06
 
 ### Fixed
@@ -32,6 +41,7 @@ First release.
   pull request templates, editor, formatter and lint configuration, `Makefile`, `build.clj` and the caller workflows.
 - The standard and the decisions behind it.
 
-[Unreleased]: https://github.com/AF2B/borba-tooling/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/AF2B/borba-tooling/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/AF2B/borba-tooling/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/AF2B/borba-tooling/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AF2B/borba-tooling/releases/tag/v0.1.0
