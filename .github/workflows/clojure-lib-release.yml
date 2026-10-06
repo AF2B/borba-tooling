@@ -92,9 +92,10 @@ jobs:
             echo "### Use it from deps.edn"
             echo
             echo '```clojure'
-            echo "io.github.af2b/${REPOSITORY#*/} {:git/url \"https://github.com/${REPOSITORY}\""
-            echo "                                 :git/tag \"${TAG}\""
-            echo "                                 :git/sha \"${GITHUB_SHA}\"}"
+            echo "io.github.af2b/${REPOSITORY#*/}"
+            echo "{:git/url \"https://github.com/${REPOSITORY}\""
+            echo " :git/tag \"${TAG}\""
+            echo " :git/sha \"${GITHUB_SHA}\"}"
             echo '```'
           } >> target/release-notes.md
 
