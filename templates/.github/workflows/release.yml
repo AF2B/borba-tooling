@@ -1,0 +1,29 @@
+name: Release
+
+# Runs when a version tag is pushed: the whole quality gate again, then the
+# release itself. See CONTRIBUTING.md for how to cut one.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify
+    uses: AF2B/borba-tooling/.github/workflows/clojure-lib.yml@%%tooling-sha%% # %%tooling-version%%
+    with:
+      postgres: %%postgres%%
+      redis: %%redis%%
+      kafka: %%kafka%%
+
+  release:
+    name: Release
+    needs: verify
+    uses: AF2B/borba-tooling/.github/workflows/clojure-lib-release.yml@%%tooling-sha%% # %%tooling-version%%
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
