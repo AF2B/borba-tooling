@@ -41,7 +41,7 @@ env:
 jobs:
   lint:
     name: Lint, format and conventions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,7 +80,7 @@ jobs:
 
   test:
     name: Unit tests (JDK ${{ matrix.java }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -114,7 +114,7 @@ jobs:
 
   coverage:
     name: Coverage
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -153,7 +153,7 @@ jobs:
   integration-postgres:
     name: Integration tests (PostgreSQL)
     if: ${{ inputs.postgres }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -202,7 +202,7 @@ jobs:
   integration-redis:
     name: Integration tests (Redis)
     if: ${{ inputs.redis }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       redis:
@@ -246,7 +246,7 @@ jobs:
   integration-kafka:
     name: Integration tests (Kafka)
     if: ${{ inputs.kafka }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       kafka:
@@ -283,7 +283,7 @@ jobs:
 
   build:
     name: Build the jar
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -323,7 +323,7 @@ jobs:
 
   security:
     name: Dependencies and secrets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       # The whole history is scanned for secrets, so the checkout is complete.
@@ -368,7 +368,7 @@ jobs:
       - integration-kafka
       - build
       - security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require every job to have passed or been skipped on purpose
