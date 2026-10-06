@@ -59,7 +59,7 @@ sbom: ## Write the CycloneDX bill of materials to target/sbom.cdx.json
 .PHONY: audit
 audit: sbom ## Scan the bill of materials for known vulnerabilities
 	$(DOCKER) run --rm --volume "$(CURDIR)/target:/sbom:ro" $(OSV_SCANNER_IMAGE) \
-		scan source --sbom /sbom/sbom.cdx.json
+		scan source -L /sbom/sbom.cdx.json
 
 .PHONY: secret-scan
 secret-scan: ## Scan the whole git history for committed secrets
