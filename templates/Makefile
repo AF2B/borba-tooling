@@ -17,8 +17,9 @@ help: ## List the targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .PHONY: deps
-deps: ## Resolve and download every dependency
-	$(CLOJURE) -P -M:test:coverage:lint:fmt:build:outdated
+deps: ## Resolve and download every dependency, of every alias and of the tooling
+	for alias in test coverage lint fmt build outdated; do $(CLOJURE) -P -M:$$alias || exit 1; done
+	$(BB) -e nil
 
 .PHONY: lint
 lint: ## Lint with clj-kondo, failing on any warning
