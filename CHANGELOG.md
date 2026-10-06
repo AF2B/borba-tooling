@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-06
+
 ### Fixed
 
 - `--services '[postgres]'` was ignored: `bb -x` hands the stamp a string, not a vector, and the services of a project came out
@@ -55,7 +57,8 @@ First release.
   pull request templates, editor, formatter and lint configuration, `Makefile`, `build.clj` and the caller workflows.
 - The standard and the decisions behind it.
 
-[Unreleased]: https://github.com/AF2B/borba-tooling/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/AF2B/borba-tooling/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/AF2B/borba-tooling/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/AF2B/borba-tooling/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/AF2B/borba-tooling/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/AF2B/borba-tooling/compare/v0.1.0...v0.1.1
