@@ -1,0 +1,17 @@
+{:paths ["src"]
+
+ :deps
+ {org.clojure/clojure {:mvn/version "1.12.6"}}
+
+ :aliases
+ {:test
+  {:extra-paths ["test"]}
+
+  :lint
+  {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2026.08.04"}}
+   :main-opts    ["-m" "clj-kondo.main" "--lint" "src" "test"
+                  "--fail-level" "warning"]}
+
+  :fmt
+  {:replace-deps {dev.weavejester/cljfmt {:mvn/version "0.16.6"}}
+   :main-opts    ["-m" "cljfmt.main"]}}}

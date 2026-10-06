@@ -1,0 +1,23 @@
+;; The tasks of borba-tooling itself. Repositories that follow the standard
+;; consume the namespaces under src through their own bb.edn.
+{:paths ["src" "test"]
+
+ :tasks
+ {test
+  {:doc      "Run the tests"
+   :requires ([babashka.fs :as fs]
+              [clojure.string :as str]
+              [clojure.test :as t])
+   :task
+   (let [namespaces (->> (fs/glob "test" "**_test.clj")
+                         (map (fn [path]
+                                (-> (str (fs/relativize "test" path))
+                                    (str/replace ".clj" "")
+                                    (str/replace "/" ".")
+                                    (str/replace "_" "-")
+                                    symbol)))
+                         sort)]
+     (apply require namespaces)
+     (let [{:keys [fail error]} (apply t/run-tests namespaces)]
+       (when (pos? (+ fail error))
+         (System/exit 1))))}}}
