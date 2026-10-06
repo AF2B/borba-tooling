@@ -42,18 +42,29 @@
        (filter (fn [[_ file]] (fs/exists? (fs/path root file))))
        (map first)))
 
+(defn- classpath
+  "Returns the classpath of the project with some aliases, without the
+   :main-opts of those aliases, which would replace the program to run.
+   - aliases: the aliases whose paths and dependencies are on the classpath"
+  [aliases]
+  (str/trim (:out (process/shell {:out :string :err :inherit}
+                                 "clojure"
+                                 (str "-A" (str/join aliases))
+                                 "-Spath"))))
+
 (defn check
   "Loads every namespace of the project and fails when one reflects.
    - aliases: the aliases whose dependencies are on the classpath
      (default [:test])"
   [{:keys [aliases] :or {aliases default-aliases}}]
   (let [namespaces (project-namespaces source-root)
-        program    (str "(set! *warn-on-reflection* true)"
-                        "(doseq [n '" (pr-str namespaces) "] (require n))")
+        program    (str "(do (set! *warn-on-reflection* true)"
+                        " (doseq [n '" (pr-str namespaces) "] (require n)))")
         result     (process/shell {:out :inherit :err :string :continue true}
-                                  "clojure"
-                                  (str "-A" (str/join aliases))
-                                  "-M"
+                                  "java"
+                                  "-cp"
+                                  (classpath aliases)
+                                  "clojure.main"
                                   "-e"
                                   program)
         warnings   (own-warnings (:err result) source-root)]
