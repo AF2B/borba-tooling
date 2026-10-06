@@ -57,3 +57,30 @@
       (stamp/stamp {:target target :variables variables})
       (is (str/includes? (slurp (str (fs/path target "Makefile")))
                          ".DEFAULT_GOAL")))))
+
+(deftest services-test
+  (let [flags   #'stamp/service-flags
+        none    {:postgres false :redis false :kafka false}]
+    (testing "reads a collection, of symbols, strings or keywords"
+      (is (= (assoc none :postgres true) (flags '[postgres])))
+      (is (= (assoc none :redis true) (flags ["redis"])))
+      (is (= (assoc none :kafka true :postgres true)
+             (flags [:postgres :kafka]))))
+
+    (testing "reads the string that bb -x gives, which is not a vector"
+      (is (= (assoc none :postgres true) (flags "[postgres]")))
+      (is (= (assoc none :postgres true :redis true)
+             (flags "[postgres redis]")))
+      (is (= (assoc none :postgres true :kafka true) (flags "postgres,kafka"))))
+
+    (testing "none is none"
+      (is (= none (flags nil)))
+      (is (= none (flags [])))
+      (is (= none (flags "[]")))
+      (is (= none (flags ""))))
+
+    (testing "refuses a service the pipelines cannot start, naming it"
+      (let [thrown (try (flags "[postgress]")
+                        (catch clojure.lang.ExceptionInfo e e))]
+        (is (str/includes? (ex-message thrown) "postgress"))
+        (is (= [:postgress] (:unknown (ex-data thrown))))))))

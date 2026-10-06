@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- `--services '[postgres]'` was ignored: `bb -x` hands the stamp a string, not a vector, and the services of a project came out
+  as none, so the pipeline of a library with integration tests quietly left them out. The stamp reads `"[postgres redis]"` and
+  `"postgres,redis"` as well as a collection, and refuses a service that the pipelines cannot start, naming it.
+
 ## [0.1.3] - 2026-10-06
 
 ### Fixed
