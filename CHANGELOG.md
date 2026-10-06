@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The release adopts the release that already exists for the tag, draft or not, uploads the assets over it and publishes it, and
+  retries up to five times with a growing pause. The GitHub API answered a 5xx while creating a release, which left an empty
+  draft behind, and a re-run of the job then failed on the draft.
+
 ## [0.1.2] - 2026-10-06
 
 ### Fixed

@@ -105,9 +105,29 @@ jobs:
             target/*.jar
             target/sbom.cdx.json
 
-      - name: Create the release
+      # The GitHub API answers a 5xx now and then, and a request that fails
+      # after the release was created leaves a draft behind. Publishing adopts
+      # the release that exists for the tag, whatever state it is in, and is
+      # retried before the job fails.
+      - name: Publish the release
         run: |
-          gh release create "${TAG}" target/*.jar target/sbom.cdx.json \
-            --verify-tag \
-            --title "${TAG}" \
-            --notes-file target/release-notes.md
+          publish() {
+            if gh release view "${TAG}" >/dev/null 2>&1; then
+              gh release upload "${TAG}" target/*.jar target/sbom.cdx.json --clobber &&
+                gh release edit "${TAG}" \
+                  --title "${TAG}" \
+                  --notes-file target/release-notes.md \
+                  --draft=false
+            else
+              gh release create "${TAG}" target/*.jar target/sbom.cdx.json \
+                --verify-tag \
+                --title "${TAG}" \
+                --notes-file target/release-notes.md
+            fi
+          }
+          for attempt in 1 2 3 4 5; do
+            publish && exit 0
+            echo "publishing the release failed (attempt ${attempt}); retrying"
+            sleep $((attempt * 15))
+          done
+          exit 1
