@@ -1,0 +1,379 @@
+name: Clojure library
+
+# The quality gate of a Borba Clojure library, called by the CI workflow of each
+# repository. Every step is a make target of the repository, so a red run
+# reproduces on a laptop with the same command. See docs/standard.md.
+
+on:
+  workflow_call:
+    inputs:
+      java-versions:
+        description: JSON array of the JDK versions the unit tests run on
+        type: string
+        default: '["21", "25"]'
+      postgres:
+        description: Run the integration tests against PostgreSQL
+        type: boolean
+        default: false
+      redis:
+        description: Run the integration tests against Redis
+        type: boolean
+        default: false
+      kafka:
+        description: Run the integration tests against Kafka
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # The JDK the single-run jobs use, and the tools the repository's make
+  # targets expect. Keep the versions in step with the standard.
+  PRIMARY_JAVA: "21"
+  CLOJURE_CLI_VERSION: "1.12.5.1664"
+  BABASHKA_VERSION: "1.13.225"
+
+jobs:
+  lint:
+    name: Lint, format and conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Lint
+        run: make lint
+
+      - name: Check the formatting
+        run: make fmt-check
+
+      - name: Check the conventions
+        run: make conventions
+
+      - name: Check for reflection
+        run: make reflection
+
+  test:
+    name: Unit tests (JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ${{ fromJSON(inputs.java-versions) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Run the unit tests
+        run: make test
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Run the unit tests with coverage and enforce the floor
+        run: make coverage
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: coverage-report
+          path: target/coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
+  integration-postgres:
+    name: Integration tests (PostgreSQL)
+    if: ${{ inputs.postgres }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username=ci --dbname=ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: jdbc:postgresql://localhost:5432/ci
+      DATABASE_USER: ci
+      DATABASE_PASSWORD: ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Run the integration tests
+        run: make test-integration
+
+  integration-redis:
+    name: Integration tests (Redis)
+    if: ${{ inputs.redis }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      redis:
+        image: redis:8.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Run the integration tests
+        run: make test-integration
+
+  integration-kafka:
+    name: Integration tests (Kafka)
+    if: ${{ inputs.kafka }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      kafka:
+        image: apache/kafka:4.0.0
+        ports:
+          - 9092:9092
+    env:
+      KAFKA_BROKERS: localhost:9092
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Run the integration tests
+        run: make test-integration
+
+  build:
+    name: Build the jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Build the jar
+        run: make build
+
+      - name: Show what the jar contains
+        run: unzip -l target/*.jar
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: jar
+          path: target/*.jar
+          retention-days: 14
+
+  security:
+    name: Dependencies and secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # The whole history is scanned for secrets, so the checkout is complete.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.PRIMARY_JAVA }}
+
+      - uses: DeLaGuardo/setup-clojure@6d46099eae24853c33c0482f2bb54edf4f1a4c74 # 13.7.0
+        with:
+          cli: ${{ env.CLOJURE_CLI_VERSION }}
+          bb: ${{ env.BABASHKA_VERSION }}
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', 'bb.edn') }}
+          restore-keys: clojure-${{ runner.os }}-
+
+      - name: Scan the resolved dependencies for known vulnerabilities
+        run: make audit
+
+      - name: Scan the history for committed secrets
+        run: make secret-scan
+
+  gate:
+    name: Quality gate
+    if: ${{ always() }}
+    needs:
+      - lint
+      - test
+      - coverage
+      - integration-postgres
+      - integration-redis
+      - integration-kafka
+      - build
+      - security
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every job to have passed or been skipped on purpose
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"${RESULTS}"
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<<"${RESULTS}" >/dev/null
