@@ -44,7 +44,11 @@
         (is (str/includes? ci "postgres: true"))
         (is (str/includes? ci "redis: false")))
       (is (str/includes? (slurp (str (fs/path target "CONTRIBUTING.md")))
-                         "borba-example-component")))
+                         "borba-example-component"))
+      (is (str/includes?
+           (slurp (str (fs/path target ".clj-kondo/config.edn")))
+           (str "clj-kondo.exports/io.github.af2b/"
+                "borba-example-component"))))
 
     (testing "leaves no placeholder behind"
       (doseq [file (fs/glob target "**" {:hidden true})
