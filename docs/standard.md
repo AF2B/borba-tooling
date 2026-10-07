@@ -115,6 +115,10 @@ materials and an attestation of where it was built.
 - **Failure is data.** An expected failure is a value with a stable `:error` keyword and context. Exceptions are for broken
   invariants and for the edge: I/O, network, database.
 - **Imports are grouped and sorted** by `cljfmt` and clj-kondo; there is no `:use` and no `:refer :all`.
+- **A library with macros teaches the lint about them.** The configuration and the hooks of clj-kondo go in
+  `resources/clj-kondo.exports/io.github.af2b/<repository>/`, which the lint of the library reads and the projects that depend on it
+  import with `clj-kondo --copy-configs --dependencies`. The stamped `.clj-kondo/config.edn` points there, and ignores the path
+  where there is nothing.
 
 ## Versions and the changelog
 

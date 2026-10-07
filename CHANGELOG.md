@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- The stamped `.clj-kondo/config.edn` reads `resources/clj-kondo.exports/io.github.af2b/<repository>/`, where a library that has
+  macros ships the configuration and the hooks that teach clj-kondo about them: its own lint reads it, and the projects that depend on
+  it import it. A repository without one is not affected.
+
 ## [0.1.4] - 2026-10-06
 
 ### Fixed
